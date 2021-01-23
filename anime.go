@@ -268,3 +268,42 @@ func (ths *jikanClient) GetAnimeRelatedNews(id int) (animeNews AnimeNews, err er
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimePictures is a struct of related pictures of the anime
+type AnimePictures struct {
+	Pictures []AnimePicture `json:"pictures"`
+}
+
+// AnimePicture is a struct of large and small picture of the anime
+type AnimePicture struct {
+	Large string `json:"large"`
+	Small string `json:"small"`
+}
+
+func (ths *jikanClient) GetAnimeRelatedPictures(id int) (animePictures AnimePictures, err error) {
+	url := fmt.Sprintf("%s/anime/%d/pictures", ths.baseURL, id)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animePictures)
+	if err != nil {
+		return
+	}
+
+	return
+}

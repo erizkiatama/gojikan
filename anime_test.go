@@ -201,6 +201,130 @@ func TestAnimeEndpoints(t *testing.T) {
 			})
 		})
 
+		Convey("Testing GetAnimeAllEpisodes Method", func() {
+			expectedAnimeAllEpisodes := AnimeEpisodes{
+				EpisodesLastPage: 1,
+				Episodes: []AnimeEpisode{
+					AnimeEpisode{
+						EpisodeID:     1,
+						Title:         "Asteroid Blues",
+						TitleJapanese: "アステロイド・ブルース",
+						TitleRomanji:  "Asteroid Blues ",
+						Filler:        false,
+						Recap:         false,
+						VideoURL:      "https://myanimelist.net/anime/1/Cowboy_Bebop/episode/1",
+						ForumURL:      "https://myanimelist.net/forum/?topicid=29264",
+					},
+					AnimeEpisode{
+						EpisodeID:     2,
+						Title:         "Stray Dog Strut",
+						TitleJapanese: "野良犬のストラット",
+						TitleRomanji:  "Nora Inu no Strut ",
+						Filler:        false,
+						Recap:         false,
+						VideoURL:      "https://myanimelist.net/anime/1/Cowboy_Bebop/episode/2",
+						ForumURL:      "https://myanimelist.net/forum/?topicid=29323",
+					},
+				},
+			}
+
+			expectedAnimeAllEpisodesBytes, err := json.Marshal(expectedAnimeAllEpisodes)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeAllEpisodes should return an AnimeEpisodes given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeAllEpisodesBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeAllEpisodes, err := jikan.GetAnimeAllEpisodes(animeID, 0)
+
+				So(animeAllEpisodes, ShouldResemble, expectedAnimeAllEpisodes)
+				So(animeAllEpisodes.EpisodesLastPage, ShouldEqual, 1)
+				So(len(animeAllEpisodes.Episodes), ShouldEqual, 2)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeAllEpisodes should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeAllEpisodes, err := jikan.GetAnimeAllEpisodes(animeID, 0)
+
+				So(animeAllEpisodes, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeAllEpisodes should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeAllEpisodes, err := jikan.GetAnimeAllEpisodes(0, 0)
+
+				So(animeAllEpisodes, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeAllEpisodes should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeAllEpisodes, err := jikan.GetAnimeAllEpisodes(0, 0)
+
+				So(animeAllEpisodes, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("GetAnimeAllEpisodes should return zero AnimeEpisodes given page number 2 when anime's episode less than 100", func() {
+				expectedAnimeAllEpisodes.Episodes = []AnimeEpisode{}
+				expectedAnimeAllEpisodesBytes, err := json.Marshal(expectedAnimeAllEpisodes)
+				So(err, ShouldBeNil)
+
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeAllEpisodesBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeAllEpisodes, err := jikan.GetAnimeAllEpisodes(animeID, 2)
+
+				So(animeAllEpisodes, ShouldResemble, expectedAnimeAllEpisodes)
+				So(animeAllEpisodes.EpisodesLastPage, ShouldEqual, 1)
+				So(len(animeAllEpisodes.Episodes), ShouldEqual, 0)
+				So(err, ShouldBeNil)
+			})
+		})
+
 	})
 
 }

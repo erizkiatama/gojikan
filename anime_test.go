@@ -955,6 +955,147 @@ func TestAnimeEndpoints(t *testing.T) {
 
 		})
 
-	})
+		Convey("Testing GetAnimeReviews Method", func() {
+			expectedAnimeReviews := AnimeReviews{
+				Reviews: []AnimeReview{
+					AnimeReview{
+						MalID:        7406,
+						URL:          "https://myanimelist.net/reviews.php?id=7406",
+						Type:         nil,
+						HelpfulCount: 1809,
+						Reviewer: AnimeReviewer{
+							URL:          "https://myanimelist.net/profile/TheLlama",
+							ImageURL:     "https://cdn.myanimelist.net/images/userimages/11081.jpg?t=1600353000",
+							Username:     "TheLlama",
+							EpisodesSeen: 26,
+							Scores: AnimeReviewScore{
+								Overall:   10,
+								Story:     10,
+								Animation: 9,
+								Sound:     10,
+								Character: 10,
+								Enjoyment: 9,
+							},
+						},
+						Content: "This is a first review",
+					},
+					AnimeReview{
+						MalID:        104803,
+						URL:          "https://myanimelist.net/reviews.php?id=104803",
+						Type:         nil,
+						HelpfulCount: 1295,
+						Reviewer: AnimeReviewer{
+							URL:          "https://myanimelist.net/profile/Polyphemus",
+							ImageURL:     "https://cdn.myanimelist.net/images/userimages/1872716.jpg?t=1609398600",
+							Username:     "Polyphemus",
+							EpisodesSeen: 26,
+							Scores: AnimeReviewScore{
+								Overall:   7,
+								Story:     5,
+								Animation: 9,
+								Sound:     8,
+								Character: 7,
+								Enjoyment: 8,
+							},
+						},
+						Content: "This is a second review",
+					},
+				},
+			}
 
+			expectedAnimeReviewsBytes, err := json.Marshal(expectedAnimeReviews)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeReviews should return an AnimeReviews given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeReviewsBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeReviews, err := jikan.GetAnimeReviews(animeID, 0)
+
+				So(animeReviews, ShouldResemble, expectedAnimeReviews)
+				So(len(animeReviews.Reviews), ShouldEqual, 2)
+				So(animeReviews.Reviews[0].MalID, ShouldEqual, 7406)
+				So(animeReviews.Reviews[1].Content, ShouldEqual, "This is a second review")
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeReviews should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeReviews, err := jikan.GetAnimeReviews(animeID, 0)
+
+				So(animeReviews, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeReviews should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeReviews, err := jikan.GetAnimeReviews(0, 0)
+
+				So(animeReviews, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeReviews should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeReviews, err := jikan.GetAnimeReviews(0, 0)
+
+				So(animeReviews, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("GetAnimeReviews should return AnimeReviews given valid ID and page number 2", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeReviewsBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeReviews, err := jikan.GetAnimeReviews(animeID, 2)
+
+				So(animeReviews, ShouldResemble, expectedAnimeReviews)
+				So(len(animeReviews.Reviews), ShouldEqual, 2)
+				So(animeReviews.Reviews[1].MalID, ShouldEqual, 104803)
+				So(animeReviews.Reviews[0].Content, ShouldEqual, "This is a first review")
+				So(err, ShouldBeNil)
+			})
+		})
+	})
 }

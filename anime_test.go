@@ -803,7 +803,7 @@ func TestAnimeEndpoints(t *testing.T) {
 				So(animeRelatedForum, ShouldResemble, expectedAnimeRelatedForum)
 				So(len(animeRelatedForum.Topics), ShouldEqual, 2)
 				So(animeRelatedForum.Topics[0].Replies, ShouldEqual, 478)
-				So(animeRelatedForum.Topics[1].LastPost.AuthorName, ShouldEqual, "Issun")
+				So(animeRelatedForum.Topics[1].LastPost.AuthorName, ShouldEqual, "bigDreamkiller")
 				So(err, ShouldBeNil)
 			})
 

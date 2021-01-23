@@ -624,6 +624,133 @@ func TestAnimeEndpoints(t *testing.T) {
 
 		})
 
+		Convey("Testing GetAnimeRelatedStats Method", func() {
+			expectedAnimeRelatedStats := AnimeStats{
+				Watching:    101786,
+				Completed:   694120,
+				OnHold:      68627,
+				Dropped:     25584,
+				PlanToWatch: 314633,
+				Total:       1204750,
+				Scores: AnimeScores{
+					One: AnimeScoreValue{
+						Votes:      1528,
+						Percentage: 0.2,
+					},
+					Two: AnimeScoreValue{
+						Votes:      724,
+						Percentage: 0.1,
+					},
+					Three: AnimeScoreValue{
+						Votes:      1309,
+						Percentage: 0.2,
+					},
+					Four: AnimeScoreValue{
+						Votes:      3045,
+						Percentage: 0.5,
+					},
+					Five: AnimeScoreValue{
+						Votes:      8499,
+						Percentage: 1.4,
+					},
+					Six: AnimeScoreValue{
+						Votes:      19715,
+						Percentage: 3.2,
+					},
+					Seven: AnimeScoreValue{
+						Votes:      59291,
+						Percentage: 9.6,
+					},
+					Eight: AnimeScoreValue{
+						Votes:      125361,
+						Percentage: 20.3,
+					},
+					Nine: AnimeScoreValue{
+						Votes:      174841,
+						Percentage: 28.3,
+					},
+					Ten: AnimeScoreValue{
+						Votes:      222688,
+						Percentage: 36.1,
+					},
+				},
+			}
+
+			expectedAnimeRelatedStatsBytes, err := json.Marshal(expectedAnimeRelatedStats)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeRelatedStats should return AnimeStats given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedStatsBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedStats, err := jikan.GetAnimeRelatedStats(animeID)
+
+				So(animeRelatedStats, ShouldResemble, expectedAnimeRelatedStats)
+				So(animeRelatedStats.Completed, ShouldEqual, 694120)
+				So(animeRelatedStats.Scores, ShouldHaveSameTypeAs, AnimeScores{})
+				So(animeRelatedStats.Scores.One.Percentage, ShouldEqual, 0.2)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeRelatedStats should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeRelatedStats, err := jikan.GetAnimeRelatedStats(animeID)
+
+				So(animeRelatedStats, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeRelatedStats should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeRelatedStats, err := jikan.GetAnimeRelatedStats(0)
+
+				So(animeRelatedStats, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeRelatedStats should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedStats, err := jikan.GetAnimeRelatedStats(0)
+
+				So(animeRelatedStats, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+		})
+
 	})
 
 }

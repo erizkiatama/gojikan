@@ -514,3 +514,69 @@ func (ths *jikanClient) GetAnimeRecommendations(id int) (animeRecommendations An
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimeReviews is a struct list of anime reviews by user
+type AnimeReviews struct {
+	Reviews []AnimeReview `json:"reviews"`
+}
+
+// AnimeReviewScore is a struct details of score of anime reviews
+type AnimeReviewScore struct {
+	Overall   int `json:"overall"`
+	Story     int `json:"story"`
+	Animation int `json:"animation"`
+	Sound     int `json:"sound"`
+	Character int `json:"character"`
+	Enjoyment int `json:"enjoyment"`
+}
+
+// AnimeReviewer is a struct details of reviewer of anime reviews
+type AnimeReviewer struct {
+	URL          string           `json:"url"`
+	ImageURL     string           `json:"image_url"`
+	Username     string           `json:"username"`
+	EpisodesSeen int              `json:"episodes_seen"`
+	Scores       AnimeReviewScore `json:"scores"`
+}
+
+// AnimeReview is a struct details of anime's review
+type AnimeReview struct {
+	MalID        int           `json:"mal_id"`
+	URL          string        `json:"url"`
+	Type         interface{}   `json:"type"`
+	HelpfulCount int           `json:"helpful_count"`
+	Date         time.Time     `json:"date"`
+	Reviewer     AnimeReviewer `json:"reviewer"`
+	Content      string        `json:"content"`
+}
+
+func (ths *jikanClient) GetAnimeReviews(id, page int) (animeReviews AnimeReviews, err error) {
+	url := fmt.Sprintf("%s/anime/%d/reviews", ths.baseURL, id)
+	if page > 0 {
+		url = fmt.Sprintf("%s/%d", url, page)
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeReviews)
+	if err != nil {
+		return
+	}
+
+	return
+}

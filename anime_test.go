@@ -751,6 +751,113 @@ func TestAnimeEndpoints(t *testing.T) {
 
 		})
 
+		Convey("Testing GetAnimeRelatedForum Method", func() {
+			expectedAnimeRelatedForum := AnimeForum{
+				Topics: []AnimeForumTopic{
+					AnimeForumTopic{
+						TopicID:    24838,
+						URL:        "https://myanimelist.net/forum/?topicid=24838",
+						Title:      "Cowboy Bebop Episode 26 Discussion",
+						AuthorName: "Metty",
+						AuthorURL:  "https://myanimelist.net/profile/Metty",
+						Replies:    478,
+						LastPost: AnimeForumTopicLastPost{
+							URL:        "https://myanimelist.net/forum/?topicid=24838&goto=lastpost",
+							AuthorName: "YonduOdonta",
+							AuthorURL:  "https://myanimelist.net/profile/YonduOdonta",
+						},
+					},
+					AnimeForumTopic{
+						TopicID:    40846,
+						URL:        "https://myanimelist.net/forum/?topicid=40846",
+						Title:      "Cowboy Bebop Episode 20 Discussion",
+						AuthorName: "Issun",
+						AuthorURL:  "https://myanimelist.net/profile/Issun",
+						Replies:    192,
+						LastPost: AnimeForumTopicLastPost{
+							URL:        "https://myanimelist.net/forum/?topicid=40846&goto=lastpost",
+							AuthorName: "bigDreamkiller",
+							AuthorURL:  "https://myanimelist.net/profile/bigDreamkiller",
+						},
+					},
+				},
+			}
+
+			expectedAnimeRelatedForumBytes, err := json.Marshal(expectedAnimeRelatedForum)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeRelatedForum should return AnimeForum given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedForumBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedForum, err := jikan.GetAnimeRelatedForum(animeID)
+
+				So(animeRelatedForum, ShouldResemble, expectedAnimeRelatedForum)
+				So(len(animeRelatedForum.Topics), ShouldEqual, 2)
+				So(animeRelatedForum.Topics[0].Replies, ShouldEqual, 478)
+				So(animeRelatedForum.Topics[1].LastPost.AuthorName, ShouldEqual, "Issun")
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeRelatedForum should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeRelatedForum, err := jikan.GetAnimeRelatedForum(animeID)
+
+				So(animeRelatedForum, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeRelatedForum should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeRelatedForum, err := jikan.GetAnimeRelatedForum(0)
+
+				So(animeRelatedForum, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeRelatedForum should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedForum, err := jikan.GetAnimeRelatedForum(0)
+
+				So(animeRelatedForum, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+		})
+
 	})
 
 }

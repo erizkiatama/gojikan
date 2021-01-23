@@ -471,3 +471,46 @@ func (ths *jikanClient) GetAnimeRelatedForum(id int) (animeForum AnimeForum, err
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimeRecommendations is a struct list of recommendations for the related anime
+type AnimeRecommendations struct {
+	Recommendations []AnimeRecommendation `json:"recommendations"`
+}
+
+// AnimeRecommendation is a struct details of recommendation for the related anime
+type AnimeRecommendation struct {
+	MalID               int    `json:"mal_id"`
+	URL                 string `json:"url"`
+	ImageURL            string `json:"image_url"`
+	RecommendationURL   string `json:"recommendation_url"`
+	Title               string `json:"title"`
+	RecommendationCount int    `json:"recommendation_count"`
+}
+
+func (ths *jikanClient) GetAnimeRecommendations(id int) (animeRecommendations AnimeRecommendations, err error) {
+	url := fmt.Sprintf("%s/anime/%d/recommendations", ths.baseURL, id)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeRecommendations)
+	if err != nil {
+		return
+	}
+
+	return
+}

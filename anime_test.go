@@ -325,6 +325,106 @@ func TestAnimeEndpoints(t *testing.T) {
 			})
 		})
 
+		Convey("Testing GetAnimeRelatedNews Method", func() {
+			expectedAnimeRelatedNews := AnimeNews{
+				Articles: []AnimeNewsArticle{
+					AnimeNewsArticle{
+						URL:        "https://myanimelist.net/news/60609964",
+						Title:      "North American Anime & Manga Releases for September",
+						AuthorName: "ImperfectBlue",
+						AuthorURL:  "https://myanimelist.net/profile/ImperfectBlue",
+						ForumURL:   "https://myanimelist.net/forum/?topicid=1862079",
+						ImageURL:   "https://cdn.myanimelist.net/s/common/uploaded_files/1598909553-a6f9acc1b6c36cd7b792e5bd67321c13.png?s=3b52b4fe7a2670d33b32d8397d2776bb",
+						Comments:   0,
+						Intro:      "Here are the North American anime & manga releases for September Week 1: September 1 - 7 Anime Releases Africa no Salaryman (TV) (Africa Salaryman) Complete Coll...",
+					},
+					AnimeNewsArticle{
+						URL:        "https://myanimelist.net/news/56156936",
+						Title:      "North American Anime & Manga Releases for November",
+						AuthorName: "Sakana-san",
+						AuthorURL:  "https://myanimelist.net/profile/Sakana-san",
+						ForumURL:   "https://myanimelist.net/forum/?topicid=1749894",
+						ImageURL:   "https://cdn.myanimelist.net/s/common/uploaded_files/1541455779-8da9e27ca7b6d6d699bbaec5a537b143.jpeg?s=3ee323c78fd67a75e74f36026e032c33",
+						Comments:   9,
+						Intro:      "Here are the North American anime & manga releases for November Week 1: November 6 - 12 Anime Releases Black Clover Part 2 Blu-ray & DVD Combo Galaxy Angel Z...",
+					},
+				},
+			}
+
+			expectedAnimeRelatedNewsBytes, err := json.Marshal(expectedAnimeRelatedNews)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeRelatedNews should return an AnimeEpisodes given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedNewsBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedNews, err := jikan.GetAnimeRelatedNews(animeID)
+
+				So(animeRelatedNews, ShouldResemble, expectedAnimeRelatedNews)
+				So(len(animeRelatedNews.Articles), ShouldEqual, 2)
+				So(animeRelatedNews.Articles[0].Comments, ShouldEqual, 0)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeRelatedNews should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeRelatedNews, err := jikan.GetAnimeRelatedNews(animeID)
+
+				So(animeRelatedNews, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeRelatedNews should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeRelatedNews, err := jikan.GetAnimeRelatedNews(0)
+
+				So(animeRelatedNews, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeRelatedNews should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedNews, err := jikan.GetAnimeRelatedNews(0)
+
+				So(animeRelatedNews, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+		})
+
 	})
 
 }

@@ -10,12 +10,12 @@ func TestAnimeEndpoints(t *testing.T) {
 	Convey("Testing Anime Endpoints Method", t, func() {
 		client := NewJikanClient()
 		animeID := 1
-		animeStruct = new(Anime)
+		animeStruct := Anime{}
 
 		Convey("GetAnime should return an Anime given valid ID", func() {
 			anime, err := client.GetAnime(animeID)
 
-			So(anime, ShouldResemble, animeStruct)
+			So(anime, ShouldHaveSameTypeAs, animeStruct)
 			So(anime.MalID, ShouldEqual, animeID)
 			So(err, ShouldBeNil)
 		})
@@ -23,7 +23,7 @@ func TestAnimeEndpoints(t *testing.T) {
 		Convey("GetAnime should return an error given invalid ID", func() {
 			anime, err := client.GetAnime(0)
 
-			So(anime, ShouldBeNil)
+			So(anime, ShouldBeZeroValue)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldEqual, "Resource does not exist")
 		})

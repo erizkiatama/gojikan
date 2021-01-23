@@ -858,6 +858,103 @@ func TestAnimeEndpoints(t *testing.T) {
 
 		})
 
+		Convey("Testing GetAnimeRecommendations Method", func() {
+			expectedAnimeRecommendations := AnimeRecommendations{
+				Recommendations: []AnimeRecommendation{
+					AnimeRecommendation{
+						MalID:               205,
+						URL:                 "https://myanimelist.net/anime/205/Samurai_Champloo",
+						ImageURL:            "https://cdn.myanimelist.net/images/anime/11/29134.jpg?s=f1f4802d4403c077bc159591f056aee1",
+						RecommendationURL:   "https://myanimelist.net/recommendations/anime/1-205",
+						Title:               "Samurai Champloo",
+						RecommendationCount: 90,
+					},
+					AnimeRecommendation{
+						MalID:               6,
+						URL:                 "https://myanimelist.net/anime/6/Trigun",
+						ImageURL:            "https://cdn.myanimelist.net/images/anime/7/20310.jpg?s=0a1be11b2b831d3b50747ec526e5f8fd",
+						RecommendationURL:   "https://myanimelist.net/recommendations/anime/1-6",
+						Title:               "Trigun",
+						RecommendationCount: 68,
+					},
+				},
+			}
+
+			expectedAnimeRecommendationsBytes, err := json.Marshal(expectedAnimeRecommendations)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeRecommendations should return AnimeRecommendations given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRecommendationsBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRecommendations, err := jikan.GetAnimeRecommendations(animeID)
+
+				So(animeRecommendations, ShouldResemble, expectedAnimeRecommendations)
+				So(len(animeRecommendations.Recommendations), ShouldEqual, 2)
+				So(animeRecommendations.Recommendations[0].MalID, ShouldEqual, 205)
+				So(animeRecommendations.Recommendations[1].Title, ShouldEqual, "Trigun")
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeRecommendations should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeRecommendations, err := jikan.GetAnimeRecommendations(animeID)
+
+				So(animeRecommendations, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeRecommendations should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeRecommendations, err := jikan.GetAnimeRecommendations(0)
+
+				So(animeRecommendations, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeRecommendations should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRecommendations, err := jikan.GetAnimeRecommendations(0)
+
+				So(animeRecommendations, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+		})
+
 	})
 
 }

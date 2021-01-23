@@ -354,7 +354,7 @@ func TestAnimeEndpoints(t *testing.T) {
 			expectedAnimeRelatedNewsBytes, err := json.Marshal(expectedAnimeRelatedNews)
 			So(err, ShouldBeNil)
 
-			Convey("GetAnimeRelatedNews should return an AnimeEpisodes given valid ID", func() {
+			Convey("GetAnimeRelatedNews should return an AnimeNews given valid ID", func() {
 				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedNewsBytes))
 
 				jikan.client = &MockClient{
@@ -442,7 +442,7 @@ func TestAnimeEndpoints(t *testing.T) {
 			expectedAnimeRelatedPicturesBytes, err := json.Marshal(expectedAnimeRelatedPictures)
 			So(err, ShouldBeNil)
 
-			Convey("GetAnimeRelatedPictures should return an AnimeEpisodes given valid ID", func() {
+			Convey("GetAnimeRelatedPictures should return an AnimePictures given valid ID", func() {
 				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedPicturesBytes))
 
 				jikan.client = &MockClient{
@@ -508,6 +508,117 @@ func TestAnimeEndpoints(t *testing.T) {
 				animeRelatedPictures, err := jikan.GetAnimeRelatedPictures(0)
 
 				So(animeRelatedPictures, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+		})
+
+		Convey("Testing GetAnimeRelatedVideos Method", func() {
+			expectedAnimeRelatedVideos := AnimeVideos{
+				Promo: []AnimeVideoPromo{
+					AnimeVideoPromo{
+						Title:    "PV Blu-ray Box version",
+						ImageURL: "https://i.ytimg.com/vi/qig4KOK2R2g/mqdefault.jpg",
+						VideoURL: "https://www.youtube.com/embed/qig4KOK2R2g?enablejsapi=1&wmode=opaque&autoplay=1",
+					},
+					AnimeVideoPromo{
+						Title:    "PV 2",
+						ImageURL: "https://i.ytimg.com/vi/QCaEJZqLeTU/mqdefault.jpg",
+						VideoURL: "https://www.youtube.com/embed/QCaEJZqLeTU?enablejsapi=1&wmode=opaque&autoplay=1",
+					},
+					AnimeVideoPromo{
+						Title:    "PV 1 English dub version",
+						ImageURL: "https://cdn.myanimelist.net/images/icon-banned-youtube.png",
+						VideoURL: "https://www.youtube.com/embed/gY5nDXOtv_o?enablejsapi=1&wmode=opaque&autoplay=1",
+					},
+				},
+				Episodes: []AnimeVideoEpisode{
+					AnimeVideoEpisode{
+						Title:    "The Real Folk Blues (part 2)",
+						Episode:  "Episode 26",
+						URL:      "https://myanimelist.net/anime/1/Cowboy_Bebop/episode/26",
+						ImageURL: "https://cdn.myanimelist.net/images/icon-banned-youtube.png",
+					},
+					AnimeVideoEpisode{
+						Title:    "The Real Folk Blues (part 1)",
+						Episode:  "Episode 25",
+						URL:      "https://myanimelist.net/anime/1/Cowboy_Bebop/episode/25",
+						ImageURL: "https://cdn.myanimelist.net/images/icon-banned-youtube.png",
+					},
+				},
+			}
+
+			expectedAnimeRelatedVideosBytes, err := json.Marshal(expectedAnimeRelatedVideos)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeRelatedVideos should return AnimeVideos given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedVideosBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedVideos, err := jikan.GetAnimeRelatedVideos(animeID)
+
+				So(animeRelatedVideos, ShouldResemble, expectedAnimeRelatedVideos)
+				So(len(animeRelatedVideos.Promo), ShouldEqual, 3)
+				So(len(animeRelatedVideos.Episodes), ShouldEqual, 2)
+				So(animeRelatedVideos.Promo[0].Title, ShouldEqual, "PV Blu-ray Box version")
+				So(animeRelatedVideos.Episodes[0].Episode, ShouldEqual, "Episode 26")
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeRelatedVideos should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeRelatedVideos, err := jikan.GetAnimeRelatedVideos(animeID)
+
+				So(animeRelatedVideos, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeRelatedVideos should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeRelatedVideos, err := jikan.GetAnimeRelatedVideos(0)
+
+				So(animeRelatedVideos, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeRelatedVideos should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedVideos, err := jikan.GetAnimeRelatedVideos(0)
+
+				So(animeRelatedVideos, ShouldBeZeroValue)
 				So(err, ShouldNotBeNil)
 			})
 

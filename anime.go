@@ -83,7 +83,10 @@ type Anime struct {
 
 func (ths *jikanClient) GetAnime(id int) (anime Anime, err error) {
 	url := fmt.Sprintf("%s/anime/%d", ths.baseURL, id)
-	resp, err := http.Get(url)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
 	if err != nil {
 		return
 	}
@@ -145,7 +148,10 @@ type AnimeCharacterStaff struct {
 
 func (ths *jikanClient) GetAnimeCharacterStaff(id int) (animeCharStaff AnimeCharacterStaff, err error) {
 	url := fmt.Sprintf("%s/anime/%d/characters_staff", ths.baseURL, id)
-	resp, err := http.Get(url)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
 	if err != nil {
 		return
 	}

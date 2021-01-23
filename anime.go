@@ -359,3 +359,99 @@ func (ths *jikanClient) GetAnimeRelatedVideos(id int) (animeVideos AnimeVideos, 
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimeStats is a struct of related stats of the anime
+type AnimeStats struct {
+	Watching    int         `json:"watching"`
+	Completed   int         `json:"completed"`
+	OnHold      int         `json:"on_hold"`
+	Dropped     int         `json:"dropped"`
+	PlanToWatch int         `json:"plan_to_watch"`
+	Total       int         `json:"total"`
+	Scores      AnimeScores `json:"scores"`
+}
+
+// AnimeScoreValue is a struct details of the scores given
+type AnimeScoreValue struct {
+	Votes      int     `json:"votes"`
+	Percentage float64 `json:"percentage"`
+}
+
+// type ScoreTwo struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+// type ScoreOne struct {
+// 	Votes      int     `json:"votes"`
+// 	Percentage float64 `json:"percentage"`
+// }
+
+// AnimeScores is a struct of anime's score stats from one to ten
+type AnimeScores struct {
+	One   AnimeScoreValue `json:"1"`
+	Two   AnimeScoreValue `json:"2"`
+	Three AnimeScoreValue `json:"3"`
+	Four  AnimeScoreValue `json:"4"`
+	Five  AnimeScoreValue `json:"5"`
+	Six   AnimeScoreValue `json:"6"`
+	Seven AnimeScoreValue `json:"7"`
+	Eight AnimeScoreValue `json:"8"`
+	Nine  AnimeScoreValue `json:"9"`
+	Ten   AnimeScoreValue `json:"10"`
+}
+
+func (ths *jikanClient) GetAnimeRelatedStats(id int) (animeStats AnimeStats, err error) {
+	url := fmt.Sprintf("%s/anime/%d/stats", ths.baseURL, id)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeStats)
+	if err != nil {
+		return
+	}
+
+	return
+}

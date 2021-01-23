@@ -106,3 +106,65 @@ func (ths *jikanClient) GetAnime(id int) (anime Anime, err error) {
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimeCharacter is a struct of characters' details in the anime
+type AnimeCharacter struct {
+	MalID       int               `json:"mal_id"`
+	URL         string            `json:"url"`
+	ImageURL    string            `json:"image_url"`
+	Name        string            `json:"name"`
+	Role        string            `json:"role"`
+	VoiceActors []AnimeVoiceActor `json:"voice_actors"`
+}
+
+// AnimeVoiceActor is a struct of voice actors' details of the anime character
+type AnimeVoiceActor struct {
+	MalID    int    `json:"mal_id"`
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	ImageURL string `json:"image_url"`
+	Language string `json:"language"`
+}
+
+// AnimeStaff is a struct of staff's details responsible for the anime
+type AnimeStaff struct {
+	MalID     int      `json:"mal_id"`
+	URL       string   `json:"url"`
+	Name      string   `json:"name"`
+	ImageURL  string   `json:"image_url"`
+	Positions []string `json:"positions"`
+}
+
+// AnimeCharacterStaff is a struct of characters and staffs of the anime
+type AnimeCharacterStaff struct {
+	Characters []AnimeCharacter `json:"characters"`
+	Staff      []AnimeStaff     `json:"staff"`
+}
+
+func (ths *jikanClient) GetAnimeCharacterStaff(id int) (animeCharStaff AnimeCharacterStaff, err error) {
+	url := fmt.Sprintf("%s/anime/%d/characters_staff", ths.baseURL, id)
+	resp, err := http.Get(url)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(body, &animeCharStaff)
+	if err != nil {
+		return
+	}
+
+	return
+}

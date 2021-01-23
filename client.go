@@ -4,6 +4,7 @@ package gojikan
 // for all API calls to Jikan API
 type Client interface {
 	GetAnime(id int) (anime Anime, err error)
+	GetAnimeCharacterStaff(id int) (animeCharStaff AnimeCharacterStaff, err error)
 }
 
 type jikanClient struct {

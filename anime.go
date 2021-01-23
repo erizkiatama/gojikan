@@ -307,3 +307,55 @@ func (ths *jikanClient) GetAnimeRelatedPictures(id int) (animePictures AnimePict
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimeVideos is a struct of related promotional and episodes videos of the anime
+type AnimeVideos struct {
+	RequestHash        string              `json:"request_hash"`
+	RequestCached      bool                `json:"request_cached"`
+	RequestCacheExpiry int                 `json:"request_cache_expiry"`
+	Promo              []AnimeVideoPromo   `json:"promo"`
+	Episodes           []AnimeVideoEpisode `json:"episodes"`
+}
+
+// AnimeVideoPromo is a struct of details of related promotional video of the anime
+type AnimeVideoPromo struct {
+	Title    string `json:"title"`
+	ImageURL string `json:"image_url"`
+	VideoURL string `json:"video_url"`
+}
+
+// AnimeVideoEpisode is a struct of details of related episode video of the anime
+type AnimeVideoEpisode struct {
+	Title    string `json:"title"`
+	Episode  string `json:"episode"`
+	URL      string `json:"url"`
+	ImageURL string `json:"image_url"`
+}
+
+func (ths *jikanClient) GetAnimeRelatedVideos(id int) (animeVideos AnimeVideos, err error) {
+	url := fmt.Sprintf("%s/anime/%d/videos", ths.baseURL, id)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeVideos)
+	if err != nil {
+		return
+	}
+
+	return
+}

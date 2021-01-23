@@ -379,43 +379,6 @@ type AnimeScoreValue struct {
 	Percentage float64 `json:"percentage"`
 }
 
-// type ScoreTwo struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-// type ScoreOne struct {
-// 	Votes      int     `json:"votes"`
-// 	Percentage float64 `json:"percentage"`
-// }
-
 // AnimeScores is a struct of anime's score stats from one to ten
 type AnimeScores struct {
 	One   AnimeScoreValue `json:"1"`
@@ -449,6 +412,59 @@ func (ths *jikanClient) GetAnimeRelatedStats(id int) (animeStats AnimeStats, err
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	err = json.Unmarshal(body, &animeStats)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// ===================================================================================================================================
+
+// AnimeForum is a struct of related forum topics of the anime
+type AnimeForum struct {
+	Topics []AnimeForumTopic `json:"topics"`
+}
+
+// AnimeForumTopicLastPost is a struct details of last post of an anime forum topic
+type AnimeForumTopicLastPost struct {
+	URL        string    `json:"url"`
+	AuthorName string    `json:"author_name"`
+	AuthorURL  string    `json:"author_url"`
+	DatePosted time.Time `json:"date_posted"`
+}
+
+// AnimeForumTopic is a struct details of of an anime forum topic
+type AnimeForumTopic struct {
+	TopicID    int                     `json:"topic_id"`
+	URL        string                  `json:"url"`
+	Title      string                  `json:"title"`
+	DatePosted time.Time               `json:"date_posted"`
+	AuthorName string                  `json:"author_name"`
+	AuthorURL  string                  `json:"author_url"`
+	Replies    int                     `json:"replies"`
+	LastPost   AnimeForumTopicLastPost `json:"last_post"`
+}
+
+func (ths *jikanClient) GetAnimeRelatedForum(id int) (animeForum AnimeForum, err error) {
+	url := fmt.Sprintf("%s/anime/%d/stats", ths.baseURL, id)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeForum)
 	if err != nil {
 		return
 	}

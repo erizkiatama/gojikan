@@ -425,6 +425,94 @@ func TestAnimeEndpoints(t *testing.T) {
 
 		})
 
+		Convey("Testing GetAnimeRelatedPictures Method", func() {
+			expectedAnimeRelatedPictures := AnimePictures{
+				Pictures: []AnimePicture{
+					AnimePicture{
+						Large: "https://cdn.myanimelist.net/images/anime/7/3791l.jpg",
+						Small: "https://cdn.myanimelist.net/images/anime/7/3791.jpg",
+					},
+					AnimePicture{
+						Large: "https://cdn.myanimelist.net/images/anime/12/19609l.jpg",
+						Small: "https://cdn.myanimelist.net/images/anime/12/19609.jpg",
+					},
+				},
+			}
+
+			expectedAnimeRelatedPicturesBytes, err := json.Marshal(expectedAnimeRelatedPictures)
+			So(err, ShouldBeNil)
+
+			Convey("GetAnimeRelatedPictures should return an AnimeEpisodes given valid ID", func() {
+				r := ioutil.NopCloser(bytes.NewReader(expectedAnimeRelatedPicturesBytes))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedPictures, err := jikan.GetAnimeRelatedPictures(animeID)
+
+				So(animeRelatedPictures, ShouldResemble, expectedAnimeRelatedPictures)
+				So(len(animeRelatedPictures.Pictures), ShouldEqual, 2)
+				So(animeRelatedPictures.Pictures[0].Large, ShouldEqual, "https://cdn.myanimelist.net/images/anime/7/3791l.jpg")
+				So(err, ShouldBeNil)
+			})
+
+			Convey("GetAnimeRelatedPictures should return error when the API call failed", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return nil, errors.New("Something happened when requesting")
+					},
+				}
+
+				animeRelatedPictures, err := jikan.GetAnimeRelatedPictures(animeID)
+
+				So(animeRelatedPictures, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "Something happened when requesting")
+			})
+
+			Convey("GetAnimeRelatedPictures should return ResourceNotFoundError given unknown ID", func() {
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 404,
+							Body:       nil,
+						}, nil
+					},
+				}
+
+				animeRelatedPictures, err := jikan.GetAnimeRelatedPictures(0)
+
+				So(animeRelatedPictures, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, ResourceNotFoundError)
+			})
+
+			Convey("GetAnimeRelatedPictures should return error when unmarshaling unknown data type", func() {
+				r := ioutil.NopCloser(bytes.NewReader([]byte("Unknown Data")))
+
+				jikan.client = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				animeRelatedPictures, err := jikan.GetAnimeRelatedPictures(0)
+
+				So(animeRelatedPictures, ShouldBeZeroValue)
+				So(err, ShouldNotBeNil)
+			})
+
+		})
+
 	})
 
 }

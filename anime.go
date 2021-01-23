@@ -174,3 +174,60 @@ func (ths *jikanClient) GetAnimeCharacterStaff(id int) (animeCharStaff AnimeChar
 
 	return
 }
+
+// ===================================================================================================================================
+
+// AnimeEpisodes is a struct of all episodes in the anime with pagination
+// One page consist of max 100 episodes
+type AnimeEpisodes struct {
+	EpisodesLastPage int            `json:"episodes_last_page"`
+	Episodes         []AnimeEpisode `json:"episodes"`
+}
+
+// AnimeEpisode is a struct of episode details in the anime
+type AnimeEpisode struct {
+	EpisodeID     int       `json:"episode_id"`
+	Title         string    `json:"title"`
+	TitleJapanese string    `json:"title_japanese"`
+	TitleRomanji  string    `json:"title_romanji"`
+	Aired         time.Time `json:"aired"`
+	Filler        bool      `json:"filler"`
+	Recap         bool      `json:"recap"`
+	VideoURL      string    `json:"video_url"`
+	ForumURL      string    `json:"forum_url"`
+}
+
+// GetAnimeAllEpisodes return all anime's episode per page
+// Maximum 100 episode per page, if there are more you have to call next page
+// Put 0 in page parameter if don't want to use the page
+func (ths *jikanClient) GetAnimeAllEpisodes(id, page int) (animeEpisodes AnimeEpisodes, err error) {
+	url := fmt.Sprintf("%s/anime/%d/episodes", ths.baseURL, id)
+	if page > 0 {
+		url = fmt.Sprintf("%s/%d", url, page)
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(body, &animeEpisodes)
+	if err != nil {
+		return
+	}
+
+	return
+}

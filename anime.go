@@ -97,10 +97,7 @@ func (ths *jikanClient) GetAnime(id int) (anime Anime, err error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
+	body, _ := ioutil.ReadAll(resp.Body)
 
 	err = json.Unmarshal(body, &anime)
 	if err != nil {
@@ -162,10 +159,7 @@ func (ths *jikanClient) GetAnimeCharacterStaff(id int) (animeCharStaff AnimeChar
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
+	body, _ := ioutil.ReadAll(resp.Body)
 
 	err = json.Unmarshal(body, &animeCharStaff)
 	if err != nil {
@@ -219,12 +213,55 @@ func (ths *jikanClient) GetAnimeAllEpisodes(id, page int) (animeEpisodes AnimeEp
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeEpisodes)
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(body, &animeEpisodes)
+	return
+}
+
+// ===================================================================================================================================
+
+// AnimeNews is a struct of related news articles of the anime
+type AnimeNews struct {
+	Articles []AnimeNewsArticle `json:"articles"`
+}
+
+// AnimeNewsArticle is a struct of related news article details of the anime
+type AnimeNewsArticle struct {
+	URL        string    `json:"url"`
+	Title      string    `json:"title"`
+	Date       time.Time `json:"date"`
+	AuthorName string    `json:"author_name"`
+	AuthorURL  string    `json:"author_url"`
+	ForumURL   string    `json:"forum_url"`
+	ImageURL   string    `json:"image_url"`
+	Comments   int       `json:"comments"`
+	Intro      string    `json:"intro"`
+}
+
+func (ths *jikanClient) GetAnimeRelatedNews(id int) (animeNews AnimeNews, err error) {
+	url := fmt.Sprintf("%s/anime/%d/news", ths.baseURL, id)
+
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+
+	resp, err := ths.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	err = ths.checkStatusError(resp.StatusCode)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &animeNews)
 	if err != nil {
 		return
 	}

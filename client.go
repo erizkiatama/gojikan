@@ -8,6 +8,7 @@ type Client interface {
 	GetAnime(id int) (anime Anime, err error)
 	GetAnimeCharacterStaff(id int) (animeCharStaff AnimeCharacterStaff, err error)
 	GetAnimeAllEpisodes(id, page int) (animeEpisodes AnimeEpisodes, err error)
+	GetAnimeRelatedNews(id int) (animeNews AnimeNews, err error)
 }
 
 // HTTPClient is an interface for mocking http library calls
